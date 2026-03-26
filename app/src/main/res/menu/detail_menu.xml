@@ -1,0 +1,30 @@
+<!-- res/menu/list_menu.xml -->
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/favourite_star"
+        android:icon="@drawable/star_unmrked"
+        android:title="favourite"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_redo"
+        android:title="redo list"
+        android:icon="@drawable/redo"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_copy"
+        android:title="copy list"
+        android:icon="@drawable/copy"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_delete"
+        android:title="delete list"
+        android:icon="@drawable/trash_icon"
+        app:showAsAction="never"/>
+
+</menu>
