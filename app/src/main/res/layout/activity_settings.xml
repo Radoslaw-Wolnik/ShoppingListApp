@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:menu="@menu/main_menu"
+        app:navigationContentDescription="back button"
+        app:layout_constraintTop_toTopOf="parent"
+        app:title="Settings" />
+
+
+    <TextView
+        android:id="@+id/titleAppearance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:text="Appearance"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/topAppBar" />
+
+
+    <TextView
+        android:id="@+id/textTheme"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Theme"
+        app:layout_constraintStart_toStartOf="@+id/titleAppearance"
+        app:layout_constraintTop_toBottomOf="@+id/titleAppearance" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/themeToggleGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:singleSelection="true"
+        app:selectionRequired="true"
+        app:layout_constraintStart_toStartOf="@+id/titleAppearance"
+        app:layout_constraintTop_toBottomOf="@+id/textTheme">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/lightThemeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/button_tint"
+            android:text="Light" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/darkThemeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/button_tint"
+            android:text="Dark" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/autoThemeBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:backgroundTint="@color/button_tint"
+            android:text="Auto" />
+
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+
+    <TextView
+        android:id="@+id/textCheckboxes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Show Checkboxes"
+        app:layout_constraintBottom_toBottomOf="@+id/setCheckboxes"
+        app:layout_constraintStart_toEndOf="@+id/setCheckboxes"
+        app:layout_constraintTop_toTopOf="@+id/setCheckboxes" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/setCheckboxes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="@+id/titleAppearance"
+        app:layout_constraintTop_toBottomOf="@+id/themeToggleGroup" />
+
+
+    <TextView
+        android:id="@+id/textFavourites"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Move favourite lists to the top"
+        app:layout_constraintBottom_toBottomOf="@+id/setFavourites"
+        app:layout_constraintStart_toEndOf="@+id/setFavourites"
+        app:layout_constraintTop_toTopOf="@+id/setFavourites" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/setFavourites"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="@+id/titleAppearance"
+        app:layout_constraintTop_toBottomOf="@+id/setCheckboxes" />
+
+    <TextView
+        android:id="@+id/TitleBehaviour"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="264dp"
+        android:text="Behaviour"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/topAppBar" />
+
+    <TextView
+        android:id="@+id/textCategoriesCollapse"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Collapse all categories when opening a list"
+        app:layout_constraintBottom_toBottomOf="@+id/setCategoriesCollapse"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/setCategoriesCollapse"
+        app:layout_constraintTop_toTopOf="@+id/setCategoriesCollapse" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/setCategoriesCollapse"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="@+id/TitleBehaviour"
+        app:layout_constraintTop_toBottomOf="@+id/TitleBehaviour" />
+
+    <TextView
+        android:id="@+id/textMarkedItemsHide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Hide marked items"
+        app:layout_constraintBottom_toBottomOf="@+id/setMarkedItemsHide"
+        app:layout_constraintStart_toEndOf="@+id/setMarkedItemsHide"
+        app:layout_constraintTop_toTopOf="@+id/setMarkedItemsHide" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/setMarkedItemsHide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="@+id/TitleBehaviour"
+        app:layout_constraintTop_toBottomOf="@+id/setCategoriesCollapse" />
+
+    <TextView
+        android:id="@+id/textAddDefaultCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="Add a default category"
+        app:layout_constraintBottom_toBottomOf="@+id/setAddDefaultCategory"
+        app:layout_constraintStart_toEndOf="@+id/setAddDefaultCategory"
+        app:layout_constraintTop_toTopOf="@+id/setAddDefaultCategory" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/setAddDefaultCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="@+id/TitleBehaviour"
+        app:layout_constraintTop_toBottomOf="@+id/setMarkedItemsHide" />
+
+    <TextView
+        android:id="@+id/textDefaultCategoryName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Default category name"
+        app:layout_constraintStart_toStartOf="@+id/setAddDefaultCategory"
+        app:layout_constraintTop_toBottomOf="@+id/setAddDefaultCategory" />
+
+    <EditText
+        android:id="@+id/editDefaultCategoryName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ems="6"
+        android:inputType="text"
+        android:imeOptions="actionDone"
+        android:maxLines="1"
+        android:text="Default"
+        app:layout_constraintStart_toStartOf="@+id/textDefaultCategoryName"
+        app:layout_constraintTop_toBottomOf="@+id/textDefaultCategoryName" />
+
+    <TextView
+        android:id="@+id/textFocusedMode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="12dp"
+        android:text="Focus Mode"
+        app:layout_constraintStart_toEndOf="@+id/setFocusedMode"
+        app:layout_constraintTop_toBottomOf="@+id/editDefaultCategoryName" />
+
+    <TextView
+        android:id="@+id/textFocusedModeTip"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="8dp"
+        android:text="Only one cateogry can be expanded at a time in this mode"
+        app:layout_constraintStart_toStartOf="@+id/textFocusedMode"
+        app:layout_constraintTop_toBottomOf="@+id/textFocusedMode"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:maxLines="3"
+        />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/setFocusedMode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/textFocusedModeTip"
+        app:layout_constraintStart_toStartOf="@+id/TitleBehaviour"
+        app:layout_constraintTop_toTopOf="@+id/textFocusedMode" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
