@@ -147,6 +147,8 @@ app/
 - saved categories activity (browse saved categories, add new ones, edit or delete saved categories)
 
 ## Fixes
+- auto-expand newly added category
+- items in list details could look nicer + the new items _____ could be only under the text
 - add a better way to changing name of item/category/list - an EditText and not a pop-up dialog 
 - apply settings change to the app (use LiveData for settings or sth else)
 - add delete item and delete category buttons / options
