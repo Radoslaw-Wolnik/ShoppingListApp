@@ -137,21 +137,24 @@ app/
 - Implement drag‑and‑drop to reorder categories/items.
 - drag and drop items between categories (move them to diff category)
 - when dragging categories collapse all categories to move them easly between
-- - 
-- Mby change the marked items hide to be more explicit? - the difference between hidden items and not hidden is not too big
-- Swiping right on item sets it as checked (mby, not sure about it) and swiping left removes it?
+- -
 - Dark theme better support (now looks ugly).
-- Data export/import (binary zip file).
 - add different language support
 - Save Categories - allows you to import from saved categories to current shopping list (eg tomato pasta category, every time you do it you buy the same things)
 - saved categories activity (browse saved categories, add new ones, edit or delete saved categories)
 
 ## Fixes
+- the cursor doesnt always appear
+- when re-entering the dit new item the done button doesnt add new items sometimes
+- -
+- automatically add a positon int to new items and categories
+- add a title dialogue whe adding new list
 - auto-expand newly added category
 - items in list details could look nicer + the new items _____ could be only under the text
 - add a better way to changing name of item/category/list - an EditText and not a pop-up dialog 
 - apply settings change to the app (use LiveData for settings or sth else)
 - add delete item and delete category buttons / options
+- -
 - Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
 - this:
 ```cmd
