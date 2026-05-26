@@ -1,188 +1,139 @@
-# Shopping List App – Android (Java + XML)
+# Shopping List App
 
-## Overview
-A fully offline shopping list manager that helps users create multiple shopping lists, organise items by categories, track progress, and mark items as done. The app demonstrates a clean MVVM architecture using modern Android Jetpack components while deliberately using **Java and XML** to build a strong foundation in traditional Android development.
+Android shopping list app built with Java, XML views, Room, LiveData, and a .NET backend.
 
-## Features
-- **Multiple shopping lists** – each with a title, creation date, and progress indicator.
-- **Categorised items** – items are grouped under user‑defined categories within each list.
-- **Expandable categories** – collapse/expand categories to see only what you need; category header shows progress (e.g., “Dairy (2/5)”).
-- **Mark items as done** – tap an item to toggle its completed state.
-- **Add new categories and items** – simple dialogs for quick input.
-- **Persistent local storage** – all data saved in a SQLite database via Room.
-- **Responsive UI** – built with RecyclerView and Material Design Components.
+The app is still local-first: Room is the UI source of truth, so the screens stay responsive and edits work while offline. Backend sync runs around that local model by storing backend GUIDs beside local Room ids and replaying queued local edits when the network is available.
 
-## Tech Stack
-| Component             | Technology                                                                 |
-|-----------------------|----------------------------------------------------------------------------|
-| Language              | Java                                                                       |
-| UI                    | XML layouts, Material Design Components                                    |
-| Architecture          | MVVM (Model‑View‑ViewModel) + Repository                                   |
-| Database              | Room Persistence Library (SQLite)                                          |
-| Reactive Programming  | LiveData (observed in UI)                                                  |
-| Navigation            | Multiple activities with explicit intents; parent activity declared in manifest for Up navigation |
-| Background Threads    | Room handles LiveData queries on background threads; manual DB operations via AsyncTask or Executors (can be extended with RxJava/Coroutines later) |
-| View Binding          | View Binding (avoid `findViewById`)                                       |
+## What It Does
 
-## Architecture Decisions
+- Create and manage multiple shopping lists.
+- Group items into categories.
+- Expand and collapse categories.
+- Add, rename, check, reset, copy, and delete list content.
+- Keep local data in Room.
+- Register this device with the backend automatically.
+- Sync lists, categories, and items with the backend.
+- Retry offline edits through a local outbox table.
+- Listen for realtime backend updates with SignalR while a list is open.
 
-### 1. MVVM with Repository
-The app follows the official Android architecture guidelines:
-- **Model**: Room entities (`ShoppingList`, `Category`, `Item`) and the database.
-- **Repository**: A single class that centralises all data operations. It abstracts the data source (Room) from the rest of the app and returns `LiveData` where appropriate.
-- **ViewModel**: Holds UI‑related data, survives configuration changes, and communicates with the repository. Two ViewModels are used:
-    - `MainViewModel` – for the list of shopping lists (used by `MainActivity`).
-    - `ShoppingListDetailViewModel` – for a single shopping list with its categories and items (used by `DetailActivity`).
-- **View**: Activities that observe LiveData and update the UI. User actions are passed to the ViewModel.
+## Backend Connection
 
-This separation ensures testability, maintainability, and a clear separation of concerns.
+The backend lives at:
 
-### 2. Why Java + XML?
-Modern Android development increasingly favours Kotlin and Jetpack Compose. However, a vast number of existing applications and enterprise projects still rely on Java and XML. Understanding this “older” stack is valuable for maintaining legacy codebases, working in diverse teams, and truly appreciating the problems that Kotlin and Compose solve.
-
-This project intentionally uses Java and XML to:
-- Build a solid understanding of fundamental Android concepts (Activities, Lifecycle, RecyclerView adapters, Intents, etc.).
-- Learn to work with `LiveData` and `ViewModel` without the syntactic sugar of Kotlin.
-- Master XML layout creation and `RecyclerView` adapters – skills still essential in many professional settings.
-- Prepare for a second version of the same app written in **Kotlin + Jetpack Compose**, allowing a direct comparison and deeper learning.
-
-### 3. Database Design (Room)
-Three tables with foreign key relationships:
-
-```
-ShoppingList (id, title, createdAt)
-    ↑
-Category (id, name, shoppingListId)
-    ↑
-Item (id, name, isDone, categoryId)
+```text
+C:\Users\rados\Github\ShoppingListBackend
 ```
 
-- A `ShoppingList` can have many `Category` entries.
-- A `Category` can have many `Item` entries.
-- `@Relation` annotations in a `ShoppingListWithDetails` POJO load the full hierarchy in one query.
+The Android app connects to the backend using:
 
-### 4. UI Implementation
+- `POST /api/devices/register` on first sync.
+- `X-API-Key` on authenticated HTTP requests.
+- `/api/shopping-lists` REST endpoints for durable list/category/item changes.
+- `/hub/shoppingLists?apiKey=...` for SignalR updates.
 
-**Main Screen (`MainActivity`)**
-- Layout contains a `RecyclerView` showing each shopping list’s title, creation date, and progress (computed from item counts).
-- Clicking a list starts `DetailActivity` and passes the shopping list ID via an intent extra.
+No manual API key setup is needed. The app stores the returned device id and API key in `backend_auth` SharedPreferences.
 
-**Detail Screen (`DetailActivity`)**
-- Displays the list title and date at the top.
-- Below, an **expandable `RecyclerView`** that shows categories and their items.
-- A single adapter handles two view types:
-    - **Category header** – shows category name and progress, click toggles expand/collapse.
-    - **Item row** – shows item name with a checkbox style (tap to toggle done).
-- A `Set<Integer>` in the adapter tracks which categories are expanded. When a header is clicked, the adapter updates the underlying flattened list (insert/remove item rows) and notifies the change, allowing smooth animations.
-- **Floating Action Button (FAB)** opens a dialog to add a new category or item (with a dropdown to select the category).
-- **Up navigation**: The manifest declares `DetailActivity`’s parent as `MainActivity`, so the system provides the Up button in the action bar.
+## Sync Design
 
-### 5. Navigation (Traditional Activity‑based)
-The app uses multiple activities, each representing a distinct screen:
-- `MainActivity` – the launcher activity, shows all shopping lists.
-- `DetailActivity` – shows a specific list with its categories and items.
+Room keeps local `long` ids for the UI. The backend owns `Guid` ids. To bridge that:
 
-Switching between screens is done via explicit intents:
-```java
-Intent intent = new Intent(MainActivity.this, DetailActivity.class);
-intent.putExtra("shopping_list_id", listId);
-startActivity(intent);
+- `shopping_list`, `category`, and `item` now have a nullable `remote_id`.
+- Local edits are written to Room first.
+- Backend work is queued in the `outbox` table.
+- `SyncManager` uploads missing remote ids, replays the outbox, then downloads the hydrated backend lists.
+- `WorkManager` retries sync periodically when the network is connected.
+- Detail screens join the list SignalR group, and incoming events trigger a refresh sync.
+
+Client-only settings, such as favourites and display preferences, stay local.
+
+## Run With Backend
+
+### Option 1: Local .NET API, default Android config
+
+The Android app defaults to:
+
+```text
+http://10.0.2.2:5295/
 ```
 
-To enable proper Up navigation (the back arrow in the action bar), each activity’s parent is declared in the `AndroidManifest.xml`:
-```xml
-<activity
-    android:name=".DetailActivity"
-    android:parentActivityName=".MainActivity" />
+`10.0.2.2` is the Android emulator alias for your host machine, and `5295` is the backend's local HTTP launch profile.
+
+Start PostgreSQL and Redis, then run the API:
+
+```powershell
+cd C:\Users\rados\Github\ShoppingListBackend
+copy .env.example .env
+docker compose up -d db redis
+
+$env:ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=ShoppingListApp;Username=ShoppingListApp;Password=please-change-this-local-development-password"
+$env:ConnectionStrings__SignalRRedis="localhost:6379"
+dotnet run --project src\ShoppingListBackend.Api --launch-profile http
 ```
 
-This approach simplifies the navigation logic and is ideal for small apps with few screens, while still allowing the use of modern architecture components.
+Then open this Android project in Android Studio and run the app on an emulator.
 
-### 6. Data Observation
-`LiveData` from Room is observed in activities. Any database change (insert, update, delete) automatically triggers a UI update. This makes the app reactive and simple to maintain.
+### Option 2: Full Docker backend
+
+Docker exposes the API on host port `8080`:
+
+```powershell
+cd C:\Users\rados\Github\ShoppingListBackend
+copy .env.example .env
+docker compose up --build
+```
+
+For the Android emulator, set the app backend URL to:
+
+```properties
+shoppingBackendBaseUrl=http://10.0.2.2:8080/
+```
+
+You can put that in this app's `gradle.properties`, or pass it for a build:
+
+```powershell
+.\gradlew.bat installDebug -PshoppingBackendBaseUrl=http://10.0.2.2:8080/
+```
+
+### Physical Device
+
+Use your computer's LAN IP instead of `10.0.2.2`, for example:
+
+```properties
+shoppingBackendBaseUrl=http://192.168.1.50:5295/
+```
+
+Make sure Windows Firewall allows the backend port.
+
+## Android Build
+
+Compile the app:
+
+```powershell
+cd C:\Users\rados\StudioProjects\ShoppingListApp
+.\gradlew.bat compileDebugJavaWithJavac
+```
+
+Run unit tests:
+
+```powershell
+.\gradlew.bat testDebugUnitTest
+```
 
 ## Project Structure
-```
-app/
-├── src/main/
-│   ├── java/com/example/shoppinglist/
-│   │   ├── data/
-│   │   │   ├── local/
-│   │   │   │   ├── entity/       # Room Database entities
-│   │   │   │   ├── dao/          # Data Access Objects
-│   │   │   │   ├── queryresult/  # POJOs for querries and joins
-│   │   │   │   └── converter/    # type converters
-│   │   │   ├── repository/       # ShoppingListRepository
-│   │   │   └── AppDatabse.java   # Room database class
-│   │   ├── viewmodel/            # MainViewModel, ShoppingListDetailViewModel
-│   │   ├── ui/
-│   │   │   ├── main/             # MainActivity & adapter
-│   │   │   ├── detail/           # DetailActivity & expandable adapter
-│   │   │   └── dialogs/          # AddCategoryDialog, AddItemDialog
-│   │   ├── utils/                # Helper classes (e.g., DateFormatter)
-│   │   └── MyApp.java            # custom app declaration
-│   └── res/
-│       ├── layout/               # XML layouts for activities and items
-│       ├── menu/                 # Menu resources (if any)
-│       └── values/               # Colors, strings, themes
+
+```text
+app/src/main/java/com/example/shoppinglistapp/
+  data/local/       Room database, entities, DAOs, migrations
+  data/remote/      Retrofit backend client and SignalR client
+  data/repository/  App repository used by ViewModels
+  data/sync/        Outbox sync and WorkManager worker
+  ui/               Activities and RecyclerView adapters
+  viewmodel/        Main, detail, and settings ViewModels
 ```
 
-## Getting Started
-1. Clone the repository.
-2. Open the project in **Android Studio** (Arctic Fox or newer).
-3. Sync Gradle and let dependencies download.
-4. Run on an emulator or physical device (API 21+).
+## Notes
 
-## Future Plans
-- Implement drag‑and‑drop to reorder categories/items.
-- drag and drop items between categories (move them to diff category)
-- when dragging categories collapse all categories to move them easly between
-- -
-- Dark theme better support (now looks ugly).
-- add different language support
-- Save Categories - allows you to import from saved categories to current shopping list (eg tomato pasta category, every time you do it you buy the same things)
-- saved categories activity (browse saved categories, add new ones, edit or delete saved categories)
-
-## Fixes
-- the cursor doesnt always appear
-- when re-entering the dit new item the done button doesnt add new items sometimes
-- -
-- automatically add a positon int to new items and categories
-- add a title dialogue whe adding new list
-- auto-expand newly added category
-- items in list details could look nicer + the new items _____ could be only under the text
-- add a better way to changing name of item/category/list - an EditText and not a pop-up dialog 
-- apply settings change to the app (use LiveData for settings or sth else)
-- add delete item and delete category buttons / options
-- -
-- Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
-- this:
-```cmd
-> Task :app:compileDebugJavaWithJavac
-C:\Users\rados\StudioProjects\ShoppingListApp\app\src\main\java\com\example\shoppinglistapp\data\local\dao\ShoppingListDao.java:46: warning: The return value includes a POJO with a @Relation. It is usually desired to annotate this method with @Transaction to avoid possibility of inconsistent results between the POJO and its relations. See https://developer.android.com/reference/androidx/room/Transaction.html for details.
-    LiveData<ShoppingListWithAllItems> getShoppingListWithAllItemsById(long id);
-                                       ^
-C:\Users\rados\StudioProjects\ShoppingListApp\app\src\main\java\com\example\shoppinglistapp\data\local\dao\ShoppingListDao.java:61: warning: The return value includes a POJO with a @Relation. It is usually desired to annotate this method with @Transaction to avoid possibility of inconsistent results between the POJO and its relations. See https://developer.android.com/reference/androidx/room/Transaction.html for details.
-    ShoppingListWithAllItems getShoppingListWithAllItemsSync(long id);
-                             ^
-C:\Users\rados\StudioProjects\ShoppingListApp\app\src\main\java\com\example\shoppinglistapp\data\local\dao\CategoryDao.java:28: warning: The return value includes a POJO with a @Relation. It is usually desired to annotate this method with @Transaction to avoid possibility of inconsistent results between the POJO and its relations. See https://developer.android.com/reference/androidx/room/Transaction.html for details.
-    LiveData<List<CategoryWithItems>> getCategoriesWithItemsByShoppingListId(long shoppingListId);
-                                      ^
-Note: C:\Users\rados\StudioProjects\ShoppingListApp\app\src\main\java\com\example\shoppinglistapp\viewmodel\factory\ListDetailViewModelFactory.java uses unchecked or unsafe operations.
-Note: Recompile with -Xlint:unchecked for details.
-3 warnings
-```
-
-## Why This Project Matters
-This app is not just a shopping list – it’s a carefully crafted learning tool that demonstrates:
-- How to structure a real‑world Android app with a clean architecture (MVVM + Repository).
-- The role of each Jetpack component (Room, ViewModel, LiveData).
-- The power and flexibility of `RecyclerView` (including expandable lists).
-- How to work with SQLite via Room without writing raw queries.
-- Traditional activity‑based navigation with intents and manifest‑defined parent relationships.
-
-By using Java and XML, it provides a solid foundation for developers who may later transition to Kotlin, while also serving as a reference for maintaining and understanding older Android codebases.
-
----
-
-*“The only way to go fast is to go well.” – Robert C. Martin*
+- The development backend uses cleartext HTTP, so the debug app allows cleartext traffic.
+- The emulator must be able to reach the backend URL before sync can succeed.
+- Existing local rows without `remote_id` are uploaded during sync.
+- If the backend is unavailable, local edits remain in Room and the outbox until a later sync succeeds.
