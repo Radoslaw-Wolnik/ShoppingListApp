@@ -9,7 +9,7 @@ import com.example.shoppinglistapp.viewmodel.ListDetailViewModel;
 public class ListDetailViewModelFactory implements ViewModelProvider.Factory {
     private final long listId;
 
-    public ListDetailViewModelFactory( long listId) {
+    public ListDetailViewModelFactory(long listId) {
         this.listId = listId;
     }
 
@@ -17,7 +17,7 @@ public class ListDetailViewModelFactory implements ViewModelProvider.Factory {
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
         if (modelClass.isAssignableFrom(ListDetailViewModel.class)) {
-            return (T) new ListDetailViewModel(listId);
+            return modelClass.cast(new ListDetailViewModel(listId));
         }
         throw new IllegalArgumentException("Unknown ViewModel class: " + modelClass.getName());
     }
