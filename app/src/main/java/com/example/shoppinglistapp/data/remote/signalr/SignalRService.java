@@ -10,6 +10,8 @@ import com.microsoft.signalr.HubConnectionState;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SignalRService {
     private static final String TAG = "SignalRService";
@@ -19,6 +21,7 @@ public class SignalRService {
     private HubConnection hubConnection;
     private String currentApiKey;
     private SignalRListener listener;
+    private final Set<String> joinedListIds = new HashSet<>();
 
     public SignalRService(Context context, String backendBaseUrl) {
         this.context = context.getApplicationContext();
@@ -35,7 +38,10 @@ public class SignalRService {
         hubConnection = HubConnectionBuilder.create(buildHubUrl(apiKey)).build();
         registerHandlers(hubConnection);
         hubConnection.start().subscribe(
-                () -> Log.d(TAG, "Connected to shopping list hub"),
+                () -> {
+                    Log.d(TAG, "Connected to shopping list hub");
+                    sendJoinedLists();
+                },
                 error -> Log.w(TAG, "Could not connect to shopping list hub", error));
     }
 
@@ -46,19 +52,27 @@ public class SignalRService {
     }
 
     public void joinList(String remoteListId) {
+        if (!hasText(remoteListId)) return;
+        synchronized (joinedListIds) {
+            joinedListIds.add(remoteListId);
+        }
         HubConnection connection = hubConnection;
         if (connection != null
                 && connection.getConnectionState() == HubConnectionState.CONNECTED
-                && hasText(remoteListId)) {
+        ) {
             connection.send("JoinList", remoteListId);
         }
     }
 
     public void leaveList(String remoteListId) {
+        if (!hasText(remoteListId)) return;
+        synchronized (joinedListIds) {
+            joinedListIds.remove(remoteListId);
+        }
         HubConnection connection = hubConnection;
         if (connection != null
                 && connection.getConnectionState() == HubConnectionState.CONNECTED
-                && hasText(remoteListId)) {
+        ) {
             connection.send("LeaveList", remoteListId);
         }
     }
@@ -77,6 +91,19 @@ public class SignalRService {
 
     private String buildHubUrl(String apiKey) {
         return hubBaseUrl + "?apiKey=" + urlEncode(apiKey);
+    }
+
+    private void sendJoinedLists() {
+        HubConnection connection = hubConnection;
+        if (connection == null || connection.getConnectionState() != HubConnectionState.CONNECTED) {
+            return;
+        }
+
+        synchronized (joinedListIds) {
+            for (String remoteListId : joinedListIds) {
+                connection.send("JoinList", remoteListId);
+            }
+        }
     }
 
     private static String normalizeBaseUrl(String baseUrl) {

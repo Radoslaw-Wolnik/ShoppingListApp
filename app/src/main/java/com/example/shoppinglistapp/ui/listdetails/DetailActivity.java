@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.shoppinglistapp.MyApp;
 import com.example.shoppinglistapp.R;
 import com.example.shoppinglistapp.data.local.queryresult.CategoryWithItems;
 import com.example.shoppinglistapp.data.local.queryresult.ShoppingListWithAllItems;
@@ -42,6 +43,7 @@ public class DetailActivity extends AppCompatActivity {
 
     private boolean isEditing = false;
     private EditText activeEditor = null;
+    private String joinedRemoteListId = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -168,6 +170,7 @@ public class DetailActivity extends AppCompatActivity {
             Log.d("DetailActivityInfo", "shoppingList updated");
             updateList();
             updateTitle(listWithItems);   // we'll update the custom TextView here
+            joinRemoteList(listWithItems);
             invalidateOptionsMenu();  // this triggers onPrepareOptionsMenu
         });
         viewModel.getExpandedIds().observe(this, expandedIds -> updateList());
@@ -187,6 +190,14 @@ public class DetailActivity extends AppCompatActivity {
         // Update the adapter with the new settings
         adapter.setShowCheckboxes(viewModel.getShowCheckboxes());
         adapter.setHideMarkedItems(viewModel.getMarkedItemsHide());
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (joinedRemoteListId != null && MyApp.getSignalRService() != null) {
+            MyApp.getSignalRService().leaveList(joinedRemoteListId);
+        }
+        super.onDestroy();
     }
 
 
@@ -231,6 +242,20 @@ public class DetailActivity extends AppCompatActivity {
         if (listWithItems == null || listWithItems.shoppingList == null) return;
         String title = listWithItems.shoppingList.getTitle();
         binding.titleTextView.setText(title);  // always update the custom TextView
+    }
+
+    private void joinRemoteList(ShoppingListWithAllItems listWithItems) {
+        if (listWithItems == null || listWithItems.shoppingList == null) return;
+        String remoteId = listWithItems.shoppingList.getRemoteId();
+        if (remoteId == null || remoteId.trim().isEmpty() || remoteId.equals(joinedRemoteListId)) return;
+
+        if (joinedRemoteListId != null && MyApp.getSignalRService() != null) {
+            MyApp.getSignalRService().leaveList(joinedRemoteListId);
+        }
+        joinedRemoteListId = remoteId;
+        if (MyApp.getSignalRService() != null) {
+            MyApp.getSignalRService().joinList(remoteId);
+        }
     }
 
     @Override
