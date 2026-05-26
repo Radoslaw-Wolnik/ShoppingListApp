@@ -7,6 +7,18 @@ import androidx.room.Ignore;
 
 @Entity(tableName = "outbox")
 public class OutboxEntity {
+    public static final String CREATE_LIST = "CREATE_LIST";
+    public static final String UPDATE_LIST_TITLE = "UPDATE_LIST_TITLE";
+    public static final String DELETE_LIST = "DELETE_LIST";
+    public static final String RESET_LIST = "RESET_LIST";
+    public static final String CREATE_CATEGORY = "CREATE_CATEGORY";
+    public static final String UPDATE_CATEGORY_NAME = "UPDATE_CATEGORY_NAME";
+    public static final String DELETE_CATEGORY = "DELETE_CATEGORY";
+    public static final String CREATE_ITEM = "CREATE_ITEM";
+    public static final String UPDATE_ITEM_DESCRIPTION = "UPDATE_ITEM_DESCRIPTION";
+    public static final String TOGGLE_ITEM = "TOGGLE_ITEM";
+    public static final String DELETE_ITEM = "DELETE_ITEM";
+
     @PrimaryKey(autoGenerate = true)
     public long id;
 
