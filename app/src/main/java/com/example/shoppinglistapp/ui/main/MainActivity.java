@@ -7,7 +7,6 @@ import androidx.core.splashscreen.SplashScreen;
 import com.example.shoppinglistapp.R;
 
 import android.content.Intent;
-import android.util.Log;
 
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -16,12 +15,10 @@ import com.example.shoppinglistapp.databinding.ActivityMainBinding;
 import com.example.shoppinglistapp.ui.listdetails.DetailActivity;
 import com.example.shoppinglistapp.ui.settings.SettingsActivity;
 import com.example.shoppinglistapp.viewmodel.MainViewModel;
-import com.example.shoppinglistapp.viewmodel.SettingsViewModel;
 
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private MainViewModel viewModel;
-    private SettingsViewModel settingsViewModel;
     private ShoppingListAdapter adapter;
     private boolean isDataLoaded = false;
 
@@ -42,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
         // Set up RecyclerView
         adapter = new ShoppingListAdapter(shoppingList -> {
             // Navigate to detail activity when an item is clicked
-            Log.d("MainActivity", "Item clicked, id = " + shoppingList.getId());
             Intent intent = new Intent(MainActivity.this, DetailActivity.class);
             intent.putExtra("shopping_list_id", shoppingList.getId());
             startActivity(intent);

@@ -73,7 +73,7 @@ public class ListDetailViewModel extends ViewModel {
                 initialSet.add(cat.category.getId());
             }
         }
-        // else: both focusedMode false and categoriesCollapse true → empty set (all collapsed)
+        // else: both focusedMode false and categoriesCollapse true means all categories stay collapsed
 
         expandedIds.setValue(initialSet);
     }
@@ -117,8 +117,11 @@ public class ListDetailViewModel extends ViewModel {
     }
 
     public long addNewCategory(String name) {
-        var listId = shoppingList.getValue().shoppingList.getId();
-        return repository.insertNewCategory(listId, name);
+        ShoppingListWithAllItems currentList = shoppingList.getValue();
+        if (currentList == null || currentList.shoppingList == null) {
+            return -1;
+        }
+        return repository.insertNewCategory(currentList.shoppingList.getId(), name);
     }
 
     // is it better to pass id or the entire object?

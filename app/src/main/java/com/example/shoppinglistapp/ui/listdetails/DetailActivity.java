@@ -2,13 +2,9 @@ package com.example.shoppinglistapp.ui.listdetails;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.graphics.Rect;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -31,7 +27,6 @@ import com.example.shoppinglistapp.viewmodel.factory.ListDetailViewModelFactory;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 public class DetailActivity extends AppCompatActivity {
@@ -67,7 +62,6 @@ public class DetailActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                android.util.Log.d("DETAIL_EDIT", "the back button has been pressed");
                 if (isEditing) {
                     exitEditMode();
                 } else {
@@ -113,7 +107,6 @@ public class DetailActivity extends AppCompatActivity {
             public void onStartEditing(EditText editor) {
                 activeEditor = editor;
                 isEditing = true;
-                android.util.Log.d("DETAIL_EDIT", "enterEditMode: " + editor);
 
                 binding.editModeOverlay.setVisibility(View.VISIBLE);
             }
@@ -167,7 +160,11 @@ public class DetailActivity extends AppCompatActivity {
 
         // Observe data
         viewModel.getShoppingList().observe(this, listWithItems -> {
-            Log.d("DetailActivityInfo", "shoppingList updated");
+            if (listWithItems == null || listWithItems.shoppingList == null) {
+                Toast.makeText(this, "This list is no longer available", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
             updateList();
             updateTitle(listWithItems);   // we'll update the custom TextView here
             joinRemoteList(listWithItems);
@@ -202,8 +199,6 @@ public class DetailActivity extends AppCompatActivity {
 
 
     private void exitEditMode() {
-        android.util.Log.d("DETAIL_EDIT", "exitEditMode called. activeEditor=" + activeEditor);
-
         isEditing = false;
 
         binding.editModeOverlay.setVisibility(View.GONE);
@@ -226,7 +221,6 @@ public class DetailActivity extends AppCompatActivity {
 
 
     private void updateList() {
-        Log.d("DetailActivityInfo", "shoppingList updateList method runed");
         ShoppingListWithAllItems listWithItems = viewModel.getShoppingList().getValue();
         if (listWithItems == null) return; // or show an empty state
 

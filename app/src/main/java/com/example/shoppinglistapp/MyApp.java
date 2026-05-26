@@ -52,7 +52,7 @@ public class MyApp extends Application {
             // Mark first run as done
             settingsRepository.setFirstRunDone();
 
-            // Trigger the one‑time database population (runs on background thread)
+            // Trigger the one-time database population (runs on background thread)
             DatabaseInitializer.populateDatabase(this);
         }
 

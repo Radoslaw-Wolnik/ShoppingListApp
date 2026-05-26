@@ -1,6 +1,5 @@
 package com.example.shoppinglistapp.ui.listdetails.expandablelist.adapter;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -226,7 +225,7 @@ public class ExpandableShoppingListAdapter extends ListAdapter<ListItem, Recycle
                 }
             });
 
-            // No root click listener – the EditText handles focus
+            // No root click listener; the EditText handles focus
             binding.nameEditText.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
                     String text = binding.nameEditText.getText().toString().trim();

@@ -148,7 +148,7 @@ public class SettingsActivity extends AppCompatActivity {
                     // Do NOT finish the activity yet; we just cancelled editing
                     return;
                 }
-                // If we get here, no special handling needed – proceed with default back action
+                // If we get here, no special handling needed; proceed with default back action
                 setEnabled(false);
                 getOnBackPressedDispatcher().onBackPressed();
             }

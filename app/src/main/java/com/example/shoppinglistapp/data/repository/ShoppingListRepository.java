@@ -65,20 +65,22 @@ public class ShoppingListRepository {
             OnInsertCompleteListener listener) {
 
         executor.execute(() -> {
-            // Insert the shopping list
-            long listId = shoppingListDao.insert(newList);
-            enqueue(OutboxEntity.CREATE_LIST, listId, listId, titleData(newList.getTitle()));
+            final long[] insertedListId = {-1L};
+            db.runInTransaction(() -> {
+                long listId = shoppingListDao.insert(newList);
+                insertedListId[0] = listId;
+                enqueue(OutboxEntity.CREATE_LIST, listId, listId, titleData(newList.getTitle()));
 
-            // If needed, insert the default category (synchronously, same thread)
-            if (addDefaultCategory && defaultCategoryName != null && !defaultCategoryName.trim().isEmpty()) {
-                Category defaultCat = new Category(defaultCategoryName, listId);
-                long categoryId = categoryDao.insert(defaultCat); // synchronous insert
-                enqueue(OutboxEntity.CREATE_CATEGORY, listId, categoryId, nameData(defaultCategoryName));
-            }
+                if (addDefaultCategory && defaultCategoryName != null && !defaultCategoryName.trim().isEmpty()) {
+                    Category defaultCat = new Category(defaultCategoryName, listId);
+                    long categoryId = categoryDao.insert(defaultCat);
+                    enqueue(OutboxEntity.CREATE_CATEGORY, listId, categoryId, nameData(defaultCategoryName));
+                }
+            });
 
             // Post result back to main thread
             new Handler(Looper.getMainLooper()).post(() -> {
-                if (listener != null) listener.onInsertComplete(listId);
+                if (listener != null) listener.onInsertComplete(insertedListId[0]);
             });
             requestSync();
         });
@@ -333,6 +335,7 @@ public class ShoppingListRepository {
 
     public void copyList(final long sourceListId, final OnCopyCompleteListener listener) {
         executor.execute(() -> {
+            final long[] copiedListId = {-1L};
             db.runInTransaction(() -> {
                 // 1. Fetch the source list with all its categories and items
                 ShoppingListWithAllItems source = shoppingListDao.getShoppingListWithAllItemsSync(sourceListId);
@@ -341,6 +344,7 @@ public class ShoppingListRepository {
                 // 2. Copy the shopping list
                 ShoppingList newList = source.shoppingList.copy();
                 long newListId = shoppingListDao.insert(newList);
+                copiedListId[0] = newListId;
                 enqueue(OutboxEntity.CREATE_LIST, newListId, newListId, titleData(newList.getTitle()));
 
                 // 3. Map old category IDs to new category IDs
@@ -361,13 +365,15 @@ public class ShoppingListRepository {
                         enqueue(OutboxEntity.CREATE_ITEM, newListId, newItemId, descriptionData(newItem.getDescription()));
                     }
                 }
-
-                // 5. Post result back to main thread
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    if (listener != null) listener.onCopyComplete(newListId);
-                });
-                requestSync();
             });
+            if (copiedListId[0] == -1L) {
+                return;
+            }
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                if (listener != null) listener.onCopyComplete(copiedListId[0]);
+            });
+            requestSync();
         });
     }
 
