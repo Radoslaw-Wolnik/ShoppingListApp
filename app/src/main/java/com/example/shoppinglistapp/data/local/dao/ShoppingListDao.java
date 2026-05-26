@@ -4,6 +4,7 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Transaction;
 import androidx.room.Update;
 import androidx.lifecycle.LiveData;
 
@@ -52,6 +53,7 @@ public interface ShoppingListDao {
     LiveData<List<ShoppingListWithCount>> getAllShoppingListsWithCounts();
 
     @Query("SELECT * FROM shopping_list WHERE id = :id")
+    @Transaction
     LiveData<ShoppingListWithAllItems> getShoppingListWithAllItemsById(long id);
 
     @Query("SELECT * FROM shopping_list WHERE id = :id")
@@ -67,6 +69,7 @@ public interface ShoppingListDao {
     void toggleFavourite(long shoppingListId);
 
     @Query("SELECT * FROM shopping_list WHERE id = :id")
+    @Transaction
     ShoppingListWithAllItems getShoppingListWithAllItemsSync(long id);
 
     @Query("SELECT * FROM shopping_list WHERE id = :id")

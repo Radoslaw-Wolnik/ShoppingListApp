@@ -55,6 +55,7 @@ dependencies {
 
     // tests libs
     testImplementation libs.junit
+    testImplementation libs.mockwebserver
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 

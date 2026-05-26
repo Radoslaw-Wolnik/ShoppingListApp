@@ -3,20 +3,18 @@ package com.example.shoppinglistapp.data.remote.signalr;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.shoppinglistapp.data.remote.BackendUrl;
 import com.example.shoppinglistapp.data.remote.api.models.ShoppingListEventDto;
 import com.microsoft.signalr.HubConnection;
 import com.microsoft.signalr.HubConnectionBuilder;
 import com.microsoft.signalr.HubConnectionState;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.HashSet;
 import java.util.Set;
 
 public class SignalRService {
     private static final String TAG = "SignalRService";
 
-    private final Context context;
     private final String hubBaseUrl;
     private HubConnection hubConnection;
     private String currentApiKey;
@@ -24,8 +22,7 @@ public class SignalRService {
     private final Set<String> joinedListIds = new HashSet<>();
 
     public SignalRService(Context context, String backendBaseUrl) {
-        this.context = context.getApplicationContext();
-        this.hubBaseUrl = normalizeBaseUrl(backendBaseUrl) + "hub/shoppingLists";
+        this.hubBaseUrl = BackendUrl.normalizeBaseUrl(backendBaseUrl);
     }
 
     public synchronized void start(String apiKey) {
@@ -90,7 +87,7 @@ public class SignalRService {
     }
 
     private String buildHubUrl(String apiKey) {
-        return hubBaseUrl + "?apiKey=" + urlEncode(apiKey);
+        return BackendUrl.shoppingListHubUrl(hubBaseUrl, apiKey);
     }
 
     private void sendJoinedLists() {
@@ -103,21 +100,6 @@ public class SignalRService {
             for (String remoteListId : joinedListIds) {
                 connection.send("JoinList", remoteListId);
             }
-        }
-    }
-
-    private static String normalizeBaseUrl(String baseUrl) {
-        if (baseUrl == null || baseUrl.trim().isEmpty()) {
-            return "http://10.0.2.2:5295/";
-        }
-        return baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-    }
-
-    private static String urlEncode(String value) {
-        try {
-            return URLEncoder.encode(value, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            return value;
         }
     }
 

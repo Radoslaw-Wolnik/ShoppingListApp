@@ -4,6 +4,7 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Transaction;
 import androidx.room.Update;
 import androidx.lifecycle.LiveData;
 
@@ -37,6 +38,7 @@ public interface CategoryDao {
     void updateRemoteId(long categoryId, String remoteId);
 
     @Query("SELECT * FROM category WHERE shopping_list_id = :shoppingListId ORDER BY id ASC")
+    @Transaction
     LiveData<List<CategoryWithItems>> getCategoriesWithItemsByShoppingListId(long shoppingListId);
 
 

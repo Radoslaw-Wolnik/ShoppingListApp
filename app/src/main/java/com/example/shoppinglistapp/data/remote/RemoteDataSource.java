@@ -141,10 +141,7 @@ public class RemoteDataSource {
     }
 
     private static String normalizeBaseUrl(String baseUrl) {
-        if (baseUrl == null || baseUrl.trim().isEmpty()) {
-            return "http://10.0.2.2:5295/";
-        }
-        return baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        return BackendUrl.normalizeBaseUrl(baseUrl);
     }
 
     private static void requireSuccess(Response<?> response, String action) throws IOException {

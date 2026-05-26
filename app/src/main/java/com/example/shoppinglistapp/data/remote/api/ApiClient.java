@@ -1,6 +1,7 @@
 package com.example.shoppinglistapp.data.remote.api;
 
 import com.example.shoppinglistapp.BuildConfig;
+import com.example.shoppinglistapp.data.remote.BackendUrl;
 
 import java.io.IOException;
 
@@ -36,10 +37,7 @@ public class ApiClient {
     }
 
     private static String normalizeBaseUrl(String baseUrl) {
-        if (baseUrl == null || baseUrl.trim().isEmpty()) {
-            return "http://10.0.2.2:5295/";
-        }
-        return baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        return BackendUrl.normalizeBaseUrl(baseUrl);
     }
 
     private static class ApiKeyInterceptor implements Interceptor {
