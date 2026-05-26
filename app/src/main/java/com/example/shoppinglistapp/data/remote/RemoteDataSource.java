@@ -8,6 +8,7 @@ import com.example.shoppinglistapp.data.remote.api.ApiClient;
 import com.example.shoppinglistapp.data.remote.api.ApiService;
 import com.example.shoppinglistapp.data.remote.api.models.*;
 
+import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
@@ -27,6 +28,12 @@ public class RemoteDataSource {
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.baseUrl = normalizeBaseUrl(BuildConfig.SHOPPING_BACKEND_BASE_URL);
         this.apiService = ApiClient.createService(baseUrl, this::getApiKey);
+    }
+
+    RemoteDataSource(ApiService apiService, SharedPreferences authPreferences, String baseUrl) {
+        this.apiService = apiService;
+        this.authPreferences = authPreferences;
+        this.baseUrl = normalizeBaseUrl(baseUrl);
     }
 
     public String getBaseUrl() {
@@ -57,91 +64,112 @@ public class RemoteDataSource {
     }
 
     public List<DeviceShoppingListHeaderDto> getShoppingLists() throws IOException {
-        ensureRegistered();
-        return requireBody(apiService.getShoppingLists().execute(), "get shopping lists");
+        return executeForBody(apiService::getShoppingLists, "get shopping lists");
     }
 
     public ShoppingListDto getShoppingList(String remoteListId) throws IOException {
-        ensureRegistered();
-        return requireBody(apiService.getShoppingList(remoteListId).execute(), "get shopping list");
+        return executeForBody(() -> apiService.getShoppingList(remoteListId), "get shopping list");
     }
 
     public String createShoppingList(String title) throws IOException {
-        ensureRegistered();
         IdResponse response = requireBody(
-                apiService.createShoppingList(new CreateListRequest(title)).execute(),
+                executeWithRegisteredDevice(() -> apiService.createShoppingList(new CreateListRequest(title))),
                 "create shopping list");
         return response.id;
     }
 
     public void updateShoppingListTitle(String remoteListId, String title) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.updateShoppingListTitle(remoteListId, new UpdateTitleRequest(title)).execute(),
+        executeForSuccess(() -> apiService.updateShoppingListTitle(remoteListId, new UpdateTitleRequest(title)),
                 "update shopping list title");
     }
 
     public void deleteShoppingList(String remoteListId) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.deleteShoppingList(remoteListId).execute(), "delete shopping list");
+        executeForIdempotentDelete(() -> apiService.deleteShoppingList(remoteListId), "delete shopping list");
     }
 
     public String copyShoppingList(String remoteListId) throws IOException {
-        ensureRegistered();
-        IdResponse response = requireBody(apiService.copyShoppingList(remoteListId).execute(), "copy shopping list");
+        IdResponse response = executeForBody(() -> apiService.copyShoppingList(remoteListId), "copy shopping list");
         return response.id;
     }
 
     public void resetCheckedItems(String remoteListId) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.resetCheckedItems(remoteListId).execute(), "reset checked items");
+        executeForSuccess(() -> apiService.resetCheckedItems(remoteListId), "reset checked items");
     }
 
     public String addCategory(String remoteListId, String name) throws IOException {
-        ensureRegistered();
         IdResponse response = requireBody(
-                apiService.addCategory(remoteListId, new AddCategoryRequest(name)).execute(),
+                executeWithRegisteredDevice(() -> apiService.addCategory(remoteListId, new AddCategoryRequest(name))),
                 "add category");
         return response.id;
     }
 
     public void updateCategory(String remoteCategoryId, String name) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.updateCategory(remoteCategoryId, new UpdateCategoryNameRequest(name)).execute(),
+        executeForSuccess(() -> apiService.updateCategory(remoteCategoryId, new UpdateCategoryNameRequest(name)),
                 "update category");
     }
 
     public void deleteCategory(String remoteCategoryId) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.deleteCategory(remoteCategoryId).execute(), "delete category");
+        executeForIdempotentDelete(() -> apiService.deleteCategory(remoteCategoryId), "delete category");
     }
 
     public String addItem(String remoteCategoryId, String description) throws IOException {
-        ensureRegistered();
         IdResponse response = requireBody(
-                apiService.addItem(remoteCategoryId, new AddItemRequest(description)).execute(),
+                executeWithRegisteredDevice(() -> apiService.addItem(remoteCategoryId, new AddItemRequest(description))),
                 "add item");
         return response.id;
     }
 
     public void updateItem(String remoteItemId, String description) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.updateItem(remoteItemId, new UpdateItemDescriptionRequest(description)).execute(),
+        executeForSuccess(() -> apiService.updateItem(remoteItemId, new UpdateItemDescriptionRequest(description)),
                 "update item");
     }
 
     public void toggleItem(String remoteItemId, boolean isChecked) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.toggleItem(remoteItemId, new ToggleItemRequest(isChecked)).execute(),
+        executeForSuccess(() -> apiService.toggleItem(remoteItemId, new ToggleItemRequest(isChecked)),
                 "toggle item");
     }
 
     public void deleteItem(String remoteItemId) throws IOException {
-        ensureRegistered();
-        requireSuccess(apiService.deleteItem(remoteItemId).execute(), "delete item");
+        executeForIdempotentDelete(() -> apiService.deleteItem(remoteItemId), "delete item");
     }
 
     private static String normalizeBaseUrl(String baseUrl) {
         return BackendUrl.normalizeBaseUrl(baseUrl);
+    }
+
+    private <T> T executeForBody(CallFactory<T> callFactory, String action) throws IOException {
+        return requireBody(executeWithRegisteredDevice(callFactory), action);
+    }
+
+    private <T> void executeForSuccess(CallFactory<T> callFactory, String action) throws IOException {
+        requireSuccess(executeWithRegisteredDevice(callFactory), action);
+    }
+
+    private <T> void executeForIdempotentDelete(CallFactory<T> callFactory, String action) throws IOException {
+        Response<T> response = executeWithRegisteredDevice(callFactory);
+        if (response.code() == 404) {
+            return;
+        }
+        requireSuccess(response, action);
+    }
+
+    private <T> Response<T> executeWithRegisteredDevice(CallFactory<T> callFactory) throws IOException {
+        ensureRegistered();
+        Response<T> response = callFactory.create().execute();
+        if (response.code() != 401) {
+            return response;
+        }
+
+        clearRegistration();
+        ensureRegistered();
+        return callFactory.create().execute();
+    }
+
+    private synchronized void clearRegistration() {
+        authPreferences.edit()
+                .remove(KEY_API_KEY)
+                .remove(KEY_DEVICE_ID)
+                .apply();
     }
 
     private static void requireSuccess(Response<?> response, String action) throws IOException {
@@ -157,5 +185,9 @@ public class RemoteDataSource {
             throw new IOException("Failed to " + action + ": empty response body");
         }
         return body;
+    }
+
+    private interface CallFactory<T> {
+        Call<T> create();
     }
 }

@@ -54,11 +54,11 @@ public class SyncManager {
             }
 
             try {
-                String apiKey = remoteDataSource.ensureRegistered();
-                signalRService.start(apiKey);
+                remoteDataSource.ensureRegistered();
                 uploadLocalTreesWithoutRemoteIds();
                 uploadPendingOperations();
                 downloadRemoteLists();
+                signalRService.start(remoteDataSource.getApiKey());
                 return true;
             } catch (Exception e) {
                 Log.w(TAG, "Sync failed", e);

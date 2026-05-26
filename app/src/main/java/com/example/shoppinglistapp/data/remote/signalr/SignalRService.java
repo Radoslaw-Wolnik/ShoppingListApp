@@ -18,7 +18,8 @@ public class SignalRService {
     private final String hubBaseUrl;
     private HubConnection hubConnection;
     private String currentApiKey;
-    private SignalRListener listener;
+    private volatile SignalRListener listener;
+    private boolean intentionalStop;
     private final Set<String> joinedListIds = new HashSet<>();
 
     public SignalRService(Context context, String backendBaseUrl) {
@@ -27,25 +28,35 @@ public class SignalRService {
 
     public synchronized void start(String apiKey) {
         if (!hasText(apiKey)) return;
-        if (hubConnection != null && hubConnection.getConnectionState() != HubConnectionState.DISCONNECTED) {
+        if (hubConnection != null
+                && hubConnection.getConnectionState() != HubConnectionState.DISCONNECTED
+                && apiKey.equals(currentApiKey)) {
             return;
         }
+        if (hubConnection != null && !apiKey.equals(currentApiKey)) {
+            stopConnection();
+        }
 
+        intentionalStop = false;
         currentApiKey = apiKey;
-        hubConnection = HubConnectionBuilder.create(buildHubUrl(apiKey)).build();
-        registerHandlers(hubConnection);
-        hubConnection.start().subscribe(
+        HubConnection connection = HubConnectionBuilder.create(buildHubUrl(apiKey)).build();
+        hubConnection = connection;
+        registerHandlers(connection);
+        connection.onClosed(error -> handleClosed(connection, error));
+        connection.start().subscribe(
                 () -> {
                     Log.d(TAG, "Connected to shopping list hub");
                     sendJoinedLists();
                 },
-                error -> Log.w(TAG, "Could not connect to shopping list hub", error));
+                error -> {
+                    Log.w(TAG, "Could not connect to shopping list hub", error);
+                    clearIfCurrent(connection);
+                });
     }
 
     public synchronized void stop() {
-        if (hubConnection != null && hubConnection.getConnectionState() != HubConnectionState.DISCONNECTED) {
-            hubConnection.stop();
-        }
+        intentionalStop = true;
+        stopConnection();
     }
 
     public void joinList(String remoteListId) {
@@ -88,6 +99,48 @@ public class SignalRService {
 
     private String buildHubUrl(String apiKey) {
         return BackendUrl.shoppingListHubUrl(hubBaseUrl, apiKey);
+    }
+
+    private void handleClosed(HubConnection closedConnection, Exception error) {
+        if (error != null) {
+            Log.w(TAG, "Shopping list hub connection closed", error);
+        }
+
+        String apiKeyToReconnect;
+        synchronized (this) {
+            if (hubConnection != closedConnection) {
+                return;
+            }
+            hubConnection = null;
+            if (intentionalStop || !hasText(currentApiKey) || !hasJoinedLists()) {
+                return;
+            }
+            apiKeyToReconnect = currentApiKey;
+        }
+
+        start(apiKeyToReconnect);
+    }
+
+    private synchronized void clearIfCurrent(HubConnection connection) {
+        if (hubConnection == connection) {
+            hubConnection = null;
+        }
+    }
+
+    private synchronized void stopConnection() {
+        HubConnection connection = hubConnection;
+        hubConnection = null;
+        if (connection != null && connection.getConnectionState() != HubConnectionState.DISCONNECTED) {
+            connection.stop().subscribe(
+                    () -> Log.d(TAG, "Disconnected from shopping list hub"),
+                    error -> Log.w(TAG, "Could not disconnect from shopping list hub", error));
+        }
+    }
+
+    private boolean hasJoinedLists() {
+        synchronized (joinedListIds) {
+            return !joinedListIds.isEmpty();
+        }
     }
 
     private void sendJoinedLists() {
