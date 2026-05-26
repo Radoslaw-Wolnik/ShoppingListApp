@@ -24,6 +24,18 @@ public interface CategoryDao {
     @Query("SELECT * FROM category WHERE shopping_list_id = :shoppingListId ORDER BY id ASC")
     LiveData<List<Category>> getCategoriesByShoppingListId(long shoppingListId);
 
+    @Query("SELECT * FROM category WHERE shopping_list_id = :shoppingListId ORDER BY position ASC, id ASC")
+    List<Category> getCategoriesByShoppingListIdSync(long shoppingListId);
+
+    @Query("SELECT * FROM category WHERE id = :categoryId")
+    Category getCategorySync(long categoryId);
+
+    @Query("SELECT * FROM category WHERE remote_id = :remoteId LIMIT 1")
+    Category getCategoryByRemoteId(String remoteId);
+
+    @Query("UPDATE category SET remote_id = :remoteId WHERE id = :categoryId")
+    void updateRemoteId(long categoryId, String remoteId);
+
     @Query("SELECT * FROM category WHERE shopping_list_id = :shoppingListId ORDER BY id ASC")
     LiveData<List<CategoryWithItems>> getCategoriesWithItemsByShoppingListId(long shoppingListId);
 

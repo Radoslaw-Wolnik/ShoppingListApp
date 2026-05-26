@@ -31,6 +31,15 @@ public interface ShoppingListDao {
     @Query("SELECT * FROM shopping_list")
     List<ShoppingList> getAllShoppingListsSync();
 
+    @Query("SELECT * FROM shopping_list WHERE remote_id IS NULL")
+    List<ShoppingList> getShoppingListsWithoutRemoteId();
+
+    @Query("SELECT * FROM shopping_list WHERE remote_id = :remoteId LIMIT 1")
+    ShoppingList getShoppingListByRemoteId(String remoteId);
+
+    @Query("UPDATE shopping_list SET remote_id = :remoteId WHERE id = :shoppingListId")
+    void updateRemoteId(long shoppingListId, String remoteId);
+
     @Query("SELECT *, " +
             "(SELECT COUNT(*) FROM item i " +
             "  JOIN category c ON i.category_id = c.id " +

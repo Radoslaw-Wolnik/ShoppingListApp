@@ -22,6 +22,18 @@ public interface ItemDao {
     @Query("SELECT * FROM item WHERE category_id = :CategoryId ORDER BY ID ASC")
     LiveData<List<Item>> getItemsByCategoryId(long CategoryId);
 
+    @Query("SELECT * FROM item WHERE category_id = :categoryId ORDER BY position ASC, id ASC")
+    List<Item> getItemsByCategoryIdSync(long categoryId);
+
+    @Query("SELECT * FROM item WHERE id = :itemId")
+    Item getItemSync(long itemId);
+
+    @Query("SELECT * FROM item WHERE remote_id = :remoteId LIMIT 1")
+    Item getItemByRemoteId(String remoteId);
+
+    @Query("UPDATE item SET remote_id = :remoteId WHERE id = :itemId")
+    void updateRemoteId(long itemId, String remoteId);
+
     @Query("SELECT i.* FROM item i " +
             "INNER JOIN category c ON i.category_id = c.id " +
             "WHERE c.shopping_list_id = :shoppingListId")
