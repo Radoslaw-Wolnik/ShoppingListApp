@@ -1,115 +1,114 @@
 # Shopping List App
 
-Android shopping list app built with Java, XML views, Room, LiveData, and a .NET backend.
+Android shopping list app built with Java, XML views, Room, LiveData, WorkManager, Retrofit, and SignalR.
 
-The app is still local-first: Room is the UI source of truth, so the screens stay responsive and edits work while offline. Backend sync runs around that local model by storing backend GUIDs beside local Room ids and replaying queued local edits when the network is available.
+The app is local-first. Room is the source of truth for the UI, so lists stay usable while the device is offline. Sync runs around that local model: the app keeps backend GUIDs next to local Room ids, queues local edits in an outbox, and replays them when the backend is reachable again.
 
-## What It Does
+The backend lives in a separate repository: [Radoslaw-Wolnik/ShoppingListBackend](https://github.com/Radoslaw-Wolnik/ShoppingListBackend).
+
+## Features
 
 - Create and manage multiple shopping lists.
 - Group items into categories.
 - Expand and collapse categories.
 - Add, rename, check, reset, copy, and delete list content.
 - Keep local data in Room.
-- Register this device with the backend automatically.
 - Sync lists, categories, and items with the backend.
 - Retry offline edits through a local outbox table.
-- Listen for realtime backend updates with SignalR while a list is open.
+- Register the device with the backend automatically.
+- Receive realtime list updates through SignalR while a list is open.
 
-## Backend Connection
+## Setup
 
-The backend lives at:
+The recommended local setup is to run the backend with Docker and run the Android app from Android Studio.
 
-```text
-C:\Users\rados\Github\ShoppingListBackend
-```
+### 1. Start the backend
 
-The Android app connects to the backend using:
-
-- `POST /api/devices/register` on first sync.
-- `X-API-Key` on authenticated HTTP requests.
-- `/api/shopping-lists` REST endpoints for durable list/category/item changes.
-- `/hub/shoppingLists?apiKey=...` for SignalR updates.
-
-No manual API key setup is needed. The app stores the returned device id and API key in `backend_auth` SharedPreferences.
-
-## Sync Design
-
-Room keeps local `long` ids for the UI. The backend owns `Guid` ids. To bridge that:
-
-- `shopping_list`, `category`, and `item` now have a nullable `remote_id`.
-- Local edits are written to Room first.
-- Backend work is queued in the `outbox` table.
-- `SyncManager` uploads missing remote ids, replays the outbox, then downloads the hydrated backend lists.
-- `WorkManager` retries sync periodically when the network is connected.
-- Detail screens join the list SignalR group, and incoming events trigger a refresh sync.
-
-Client-only settings, such as favourites and display preferences, stay local.
-
-## Run With Backend
-
-### Option 1: Local .NET API, default Android config
-
-The Android app defaults to:
-
-```text
-http://10.0.2.2:5295/
-```
-
-`10.0.2.2` is the Android emulator alias for your host machine, and `5295` is the backend's local HTTP launch profile.
-
-Start PostgreSQL and Redis, then run the API:
+Clone and start the backend repository:
 
 ```powershell
-cd C:\Users\rados\Github\ShoppingListBackend
-copy .env.example .env
-docker compose up -d db redis
-
-$env:ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=ShoppingListApp;Username=ShoppingListApp;Password=please-change-this-local-development-password"
-$env:ConnectionStrings__SignalRRedis="localhost:6379"
-dotnet run --project src\ShoppingListBackend.Api --launch-profile http
-```
-
-Then open this Android project in Android Studio and run the app on an emulator.
-
-### Option 2: Full Docker backend
-
-Docker exposes the API on host port `8080`:
-
-```powershell
-cd C:\Users\rados\Github\ShoppingListBackend
+git clone https://github.com/Radoslaw-Wolnik/ShoppingListBackend.git
+cd ShoppingListBackend
 copy .env.example .env
 docker compose up --build
 ```
 
-For the Android emulator, set the app backend URL to:
+The Docker setup exposes the API on your host machine at:
 
-```properties
-shoppingBackendBaseUrl=http://10.0.2.2:8080/
+```text
+http://localhost:8080/
 ```
 
-You can put that in this app's `gradle.properties`, or pass it for a build:
+For the Android emulator, the same service is available through Android's host alias:
+
+```text
+http://10.0.2.2:8080/
+```
+
+That emulator URL is the app's default debug backend URL, so no extra Android configuration is needed for the Docker setup.
+
+### 2. Run the Android app
+
+Open this repository in Android Studio and run the `app` configuration on an emulator.
+
+From the command line, you can also build or install it with Gradle:
 
 ```powershell
-.\gradlew.bat installDebug -PshoppingBackendBaseUrl=http://10.0.2.2:8080/
+.\gradlew.bat compileDebugJavaWithJavac
+.\gradlew.bat installDebug
 ```
 
-### Physical Device
+### Using a different backend URL
 
-Use your computer's LAN IP instead of `10.0.2.2`, for example:
+If you are running the backend somewhere else, pass `shoppingBackendBaseUrl` when building the app:
+
+```powershell
+.\gradlew.bat installDebug -PshoppingBackendBaseUrl=http://10.0.2.2:5295/
+```
+
+You can also put the property in your local `gradle.properties`:
 
 ```properties
-shoppingBackendBaseUrl=http://192.168.1.50:5295/
+shoppingBackendBaseUrl=http://10.0.2.2:5295/
 ```
 
-Make sure Windows Firewall allows the backend port.
+For a physical Android device, use your computer's LAN IP instead of `10.0.2.2`:
 
-## Android Build
+```properties
+shoppingBackendBaseUrl=http://192.168.1.50:8080/
+```
+
+Make sure your firewall allows the backend port you choose.
+
+## Backend Connection
+
+The app talks to the backend through:
+
+- `POST /api/devices/register` for first-time device registration.
+- `X-API-Key` on authenticated HTTP requests.
+- `/api/shopping-lists` REST endpoints for list, category, and item changes.
+- `/hub/shoppingLists?apiKey=...` for SignalR updates.
+
+No manual API key setup is needed. The app stores the returned device id and API key in `backend_auth` SharedPreferences.
+
+## Sync Model
+
+Room keeps local `long` ids for fast UI work. The backend owns `Guid` ids for synced data. To bridge the two:
+
+- `shopping_list`, `category`, and `item` rows have nullable `remote_id` values.
+- Local edits are written to Room first.
+- Backend work is queued in the `outbox` table.
+- `SyncManager` uploads missing remote ids, replays the outbox, then downloads the latest backend state.
+- `WorkManager` retries sync periodically while the network is connected.
+- Detail screens join the list SignalR group, and incoming events trigger a refresh sync.
+
+Client-only settings, such as favourites and display preferences, stay local.
+
+## Development Commands
 
 Compile the app:
 
 ```powershell
-cd C:\Users\rados\StudioProjects\ShoppingListApp
 .\gradlew.bat compileDebugJavaWithJavac
 ```
 
@@ -136,4 +135,4 @@ app/src/main/java/com/example/shoppinglistapp/
 - The development backend uses cleartext HTTP, so the debug app allows cleartext traffic.
 - The emulator must be able to reach the backend URL before sync can succeed.
 - Existing local rows without `remote_id` are uploaded during sync.
-- If the backend is unavailable, local edits remain in Room and the outbox until a later sync succeeds.
+- If the backend is unavailable, local edits stay in Room and the outbox until a later sync succeeds.
