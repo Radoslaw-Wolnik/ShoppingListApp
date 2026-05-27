@@ -4,7 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 public final class BackendUrl {
-    public static final String DEFAULT_BASE_URL = "http://10.0.2.2:5295/";
+    public static final String DEFAULT_BASE_URL = "http://10.0.2.2:8080/";
 
     private BackendUrl() {
     }

@@ -35,7 +35,7 @@ android {
     }
 
     def backendBaseUrl = providers.gradleProperty("shoppingBackendBaseUrl")
-            .orElse("http://10.0.2.2:5295/")
+            .orElse("http://10.0.2.2:8080/")
             .get()
     defaultConfig {
         buildConfigField "String", "SHOPPING_BACKEND_BASE_URL", "\"${backendBaseUrl}\""

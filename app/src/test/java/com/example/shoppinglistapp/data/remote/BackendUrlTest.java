@@ -6,6 +6,11 @@ import static org.junit.Assert.assertEquals;
 
 public class BackendUrlTest {
     @Test
+    public void defaultBaseUrl_pointsToDockerBackendOnAndroidEmulator() {
+        assertEquals("http://10.0.2.2:8080/", BackendUrl.DEFAULT_BASE_URL);
+    }
+
+    @Test
     public void normalizeBaseUrl_usesDefaultWhenBlank() {
         assertEquals(BackendUrl.DEFAULT_BASE_URL, BackendUrl.normalizeBaseUrl("  "));
     }
